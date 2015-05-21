@@ -8,7 +8,18 @@ In real time, you need to calculate number of times a specific user has a specif
 What is the best way to model data for this in Aerospike?
 
 ##Solution
-yada yada yada
+The event data consists of:
+ - Timestamp - standard Unix timestamp
+ - Action - the action taken by the user
+ - Campaign (or category) - the capign related to the action and timestamp
+  
+The data is a master detail relation ship where the user has a cardinality  There are a few ways to model the event data in Aerospike, here are tow
+
+ - As a Map stored in a Bin
+ - AS separate records using a composite key.
+ 
+As a Map
+
 
 The source code for this solution is available on GitHub, and the README.md 
 http://github.com/some place. 
