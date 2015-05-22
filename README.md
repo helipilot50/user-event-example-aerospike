@@ -18,8 +18,8 @@ The data is a master detail relation ship where the user has the cardinality of 
 
 There are a few ways to model the event data in Aerospike, here are 2:
 
- - Option 1: Events stored as a Map stored in a Bin
- - Option 2: Events stored as separate records using a composite key.
+ - *Option 1*: Events stored as a Map stored in a Bin
+ - *Option 2*: Events stored as separate records using a composite key.
  
 
 ### How to build
@@ -39,9 +39,9 @@ A JAR file will be produced in the directory 'target', `user-event-example-1.0.0
 ###Using the solution
 
 The JAR file is a runnable JAR.
-
-java -jar user-event-example-1.0.0-full.jar -h 127.0.0.1 -p 3000 
-Options
+```bash
+java -jar user-event-example-1.0.0-full.jar 
+```
 
 These are the options:
 
@@ -58,7 +58,7 @@ These are the options:
 
 This code example is written in Java and has 2 major functions:
 
-1. Generate data using the -l command line argument. It will generate 1000 records, each with a up to 5000 events each. The number of events per user is a random number between 0 and 4999. The events will users and events for Option 1 will be generated in the Set `events-map`, and the users and their events for Option 2 will be generated in Set `events-records`.
+1. Generate data using the -l command line argument. It will generate 1000 records, each with a up to 5000 events each. The number of events per user is a random number between 0 and 4999. The events will users and events for *Option 1* will be generated in the Set `events-map`, and the users and their events for *Option 2* will be generated in Set `events-records`.
 2. Access a specific user and find the account of events for a specified campaign  or criteria, as described in the problem definition. To do this, run the example with the default arguments.
 
 ### How it works
@@ -69,6 +69,10 @@ The code is deliberately verbose to ensure that no details are hidden.
 
 #### Transaction 1 - Event data in a Map 
 This transaction is assuming that the event data is embedded in the user record as a Map.
+
+All the events in the Map for `user689` are read into the application. The Map is iterated and a count the actions per campaign that match the search criteria.
+
+This is by far the slowest approach, and it also has the draw back that elements in the event Map need to be programmatically removed after 90 days. Plus the number of events is limited by the Aerospike block size (default is 128K).
 
 ```java
 /*
@@ -99,6 +103,10 @@ log.info(String.format("%d, in %dms", count, (stop-start)));
 ```
 
 #### Transaction 2 - Event data in a Map accessed via a User Defined Function (UDF)
+This is similar to Transaction 1, but the algorithm for counting the events that match the criteria is done on the Aerospike node in a UDF. You will note that the Java code is much simpler.
+
+This approach is x6 faster because the event data is not shipped to the client application for processing.
+
 
 ```java
 /*
@@ -152,5 +160,61 @@ end
 ```
 
 #### Transaction 3 - Event data stored in separate records using a composite key
+This transaction uses a counter in the user record and a composite key for the event comprising the userid and the counter. For example, the key for the first event would be `user689:1` and the 800th event would be `user689:800`
 
+This approach is about as fast as Transaction 1. It has the advantage of unlimited events and because the events are individual records, the can have their own time-to-live and will auto delete after their time to live.
+
+```java
+/*
+ * data as individual records
+ */
+log.info("*** data as records ***");
+count = 0;
+start = System.currentTimeMillis();
+key = new Key(this.namespace, EVENTS_RECORDS_SET, user);
+userRecord = this.client.get(null, key, "event-count");
+if (userRecord != null){
+	int countRecord = userRecord.getInt("event-count");
+	if (countRecord > 0){
+		Key[] keyArray = new Key[countRecord];
+		for (int i = 0; i < countRecord; i++){
+			keyArray[i] = new Key(this.namespace, EVENTS_RECORDS_SET, user+":"+(countRecord-i));
+		}
+
+		Record[] eventRecords = this.client.get(null, keyArray);
+
+		for (Record eventRecord : eventRecords){
+			if (eventRecord == null)
+				continue;
+			long ts = eventRecord.getLong("ts");
+			if (ts < timeDelta)
+				continue;
+			String event = eventRecord.getString("event");
+			String[] eventParts = event.split(":");
+			if (eventParts[0].equals(campaign) &&
+					eventParts[1].equals(action)){
+				count++;
+			}
+		}
+	}
+}
+stop = System.currentTimeMillis();
+log.info(String.format("%d, in %dms", count, (stop-start)));
+```
+
+### Output
+Running the example on my development laptop against a single node Aerospike cluster running in Virtual Box, give the following output:
+
+```bash
+How many times did a user user689 did action tap on campaign birds in the past 90 days?
+*** data as map ***
+1, in 13ms
+*** data as map using UDF***
+1, in 2ms
+*** data as records ***
+1, in 11ms
+```
+
+Using the UDF is much faster on the events stored in a Map, using individual records for events gives you unlimited events and auto expiry (deletes) of records.
+  
 
