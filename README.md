@@ -11,7 +11,7 @@ What is the best way to model data for this in Aerospike?
 The event data consists of:
  - Timestamp - standard Unix timestamp
  - Action - the action taken by the user
- - Campaign (or category) - the capign related to the action and timestamp
+ - Campaign (or category) - the campaign related to the action and timestamp
   
 The data is a master detail relation ship where the user has the cardinality of 1 and the related events have the cardinality of 0 or more. 
 
