@@ -63,7 +63,7 @@ This code example is written in Java and has 2 major functions:
 
 ### How it works
 
-The method `work()` executes a 3 transactions to determine the number of times, in the last 90 days, the user `user689` has done the `tap` action on the `birds` campaign.
+The method `work()` executes a 3 example transactions showing different ways to determine the number of times, in the last 90 days, the user `user689` has done the `tap` action on the `birds` campaign.
 
 The code is deliberately verbose to ensure that no details are hidden.
 
