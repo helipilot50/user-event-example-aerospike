@@ -205,7 +205,7 @@ log.info(String.format("%d, in %dms", count, (stop-start)));
 ### Output
 Running the example on my development laptop against a single node Aerospike cluster running in Virtual Box, give the following output:
 
-```bash
+```
 How many times did a user user689 did action tap on campaign birds in the past 90 days?
 *** data as map ***
 1, in 13ms
