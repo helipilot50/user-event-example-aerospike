@@ -1,9 +1,18 @@
 # User Event Example
 
 ## Problem
-You store a number of events, related to a specific user ID, for a period of time. In this example, the time period is 90 days. Each event contains a time stamp, an action and a campaign (category).
+To personalize the user experience when a user access your application, you store events related to that specific user. These may be:
+ - click stream
+ - purchase history
+ - activitiy in an advertising campaign
+ - Ads viewed
+ - places visited
+ - website's visited
+ - browser history
 
-In real time, you need to calculate number of times a specific user has a specific action, for a specific campaign.
+This information has value and you may be interested in it for a period of time, or for ever. In this example, the time period is 90 days. Each event contains a time stamp, an action and a campaign or category.
+
+In real time, for a given time period, you need to calculate number of times a specific user has a specific action, for a specific campaign or category.
 
 What is the best way to model data for this in Aerospike?
 
@@ -11,7 +20,7 @@ What is the best way to model data for this in Aerospike?
 The event data consists of:
  - Timestamp - standard Unix timestamp
  - Action - the action taken by the user
- - Campaign (or category) - the campaign related to the action and timestamp
+ - Campaign or category - the campaign or category related to the action and timestamp
   
 The data is a master detail relation ship where the user has the cardinality of 1 and the related events have the cardinality of 0 or more. 
 
@@ -215,6 +224,6 @@ How many times did a user user689 did action tap on campaign birds in the past 9
 1, in 11ms
 ```
 
-Using the UDF is much faster on the events stored in a Map, using individual records for events gives you unlimited events and auto expiry (deletes) of records.
+Using the UDF is much faster on the events stored in a Map, using individual records for events gives you unlimited events and auto expiry (deletes) of records using a time-to-live for each record.
   
 
