@@ -17,6 +17,7 @@ public class UserEventTest {
 	public void setUp() throws Exception {
 		client = new AerospikeClient("localhost", 3000);
 		subject = new UserEvent(client, "test");
+		subject.registerUDF();
 	}
 
 	@After

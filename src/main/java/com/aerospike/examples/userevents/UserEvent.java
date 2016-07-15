@@ -18,10 +18,13 @@ import org.apache.log4j.Logger;
 import com.aerospike.client.AerospikeClient;
 import com.aerospike.client.AerospikeException;
 import com.aerospike.client.Bin;
+import com.aerospike.client.Info;
 import com.aerospike.client.Key;
 import com.aerospike.client.Language;
 import com.aerospike.client.Record;
 import com.aerospike.client.Value;
+import com.aerospike.client.cluster.Node;
+import com.aerospike.client.policy.InfoPolicy;
 import com.aerospike.client.task.RegisterTask;
 
 
@@ -83,13 +86,9 @@ public class UserEvent {
 			}
 
 			UserEvent as = new UserEvent(host, port, namespace);
-			/*
-			 * register UDF
-			 */
-
-			RegisterTask rt = as.client.register(null, "udf/event_module.lua", "event_module.lua", Language.LUA);
-			rt.waitTillComplete();
-
+			
+			as.registerUDF();
+			
 			if (cl.hasOption("l")){
 				as.load();
 			} else {
@@ -239,6 +238,18 @@ public class UserEvent {
 		long stop = System.currentTimeMillis();
 		log.info(String.format("Completed data load in: %d ms", stop - start));
 
+	}
+	
+	public void registerUDF() {
+		/*
+		 * check and register UDF
+		 */
+		Node[] nodes = client.getNodes();
+		String infoResult = Info.request(new InfoPolicy(), nodes[0], "udf-list");
+		if (!infoResult.contains("event_module.lua")){
+			RegisterTask rt = client.register(null, "udf/event_module.lua", "event_module.lua", Language.LUA);
+			rt.waitTillComplete();
+		}
 	}
 
 }
